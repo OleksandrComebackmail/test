@@ -1,7 +1,7 @@
 {
   "name": "changelog-sandbox",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Sandbox to test the two-changelog setup (local Claude work-log + release-please versioned changelog)"
 }
