@@ -6,6 +6,9 @@ merge to `main` the Unreleased section is cut into a versioned release.
 
 ## [Unreleased]
 
+### Added
+- add sum helper (#5) (@OleksandrComebackmail)
+
 ## [1.2.0] - 2026-06-08
 
 ### Added
