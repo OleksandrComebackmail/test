@@ -14,3 +14,5 @@ export const average = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 export const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
 export const sum = (xs) => xs.reduce((a, b) => a + b, 0);
+
+export const product = (xs) => xs.reduce((a, b) => a * b, 1);
