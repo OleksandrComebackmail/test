@@ -17,4 +17,7 @@ release-please from merged PRs). Never mix the two.
 
 ## 2026-06-08
 
+- [Feat]: add `mul` helper for multiplication (@OleksandrComebackmail)
+- [Feat]: add `div` helper with division-by-zero guard (@OleksandrComebackmail)
+- [Feat]: add `round` helper with configurable decimal places (@OleksandrComebackmail)
 - [Chore]: bootstrapped sandbox project to test the changelog setup (@OleksandrComebackmail)
