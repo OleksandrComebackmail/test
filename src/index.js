@@ -8,3 +8,5 @@ export const div = (a, b) => {
 };
 export const round = (n, decimals = 0) =>
   Math.round(n * 10 ** decimals) / 10 ** decimals;
+
+export const average = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
