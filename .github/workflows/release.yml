@@ -1,0 +1,33 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cut Unreleased into a version
+        id: cut
+        run: RELEASE_DATE=$(date -u +%F) node scripts/release.mjs
+      - name: Commit, tag & release
+        if: steps.cut.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ steps.cut.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md package.json
+          git commit -m "chore(release): v$V [skip ci]"
+          git tag "v$V"
+          git push origin HEAD:main --follow-tags
+          gh release create "v$V" --title "v$V" --notes "See CHANGELOG.md for details."

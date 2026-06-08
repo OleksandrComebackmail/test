@@ -3,5 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Sandbox to test the two-changelog setup (local Claude work-log + release-please versioned changelog)"
+  "description": "Sandbox to test the changelog flow: PR commits an Unreleased entry after a green build; merge to main cuts a version.",
+  "scripts": {
+    "build": "node --check src/index.js && echo build ok"
+  }
 }
