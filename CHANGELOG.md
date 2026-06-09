@@ -9,6 +9,7 @@ The **[Unreleased]** heading appears only while there are unreleased entries.
 
 ### Added
 - add percent helper (#8) (@OleksandrComebackmail)
+- add ratio helper (#8) (@OleksandrComebackmail)
 
 ## [1.2.0] - 2026-06-08
 
