@@ -15,3 +15,5 @@ export const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
 export const percent = (part, whole) => (whole === 0 ? 0 : (part / whole) * 100);
 export const ratio = (a, b) => (b === 0 ? 0 : a / b);
+
+export const toFixed2 = (n) => Math.round(n * 100) / 100;
