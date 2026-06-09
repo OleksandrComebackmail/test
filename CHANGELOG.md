@@ -1,6 +1,6 @@
 # Changelog
 
-<!-- unreleased -->
+# 1.4.0 — 2026-06-09
 
 ### Added
 - add toFixed2 helper ([#10](https://github.com/OleksandrComebackmail/test/pull/10)) ([22567aa](https://github.com/OleksandrComebackmail/test/commit/22567aafb7f73b296ba79aba21bc93781017e03c))
