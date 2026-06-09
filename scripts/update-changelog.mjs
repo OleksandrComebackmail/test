@@ -45,8 +45,17 @@ for (const [, an, subject] of commits.reverse()) {
 let content = existsSync(FILE)
   ? readFileSync(FILE, "utf8")
   : "# Changelog\n\n## [Unreleased]\n";
+// Re-create the Unreleased heading just above the latest version section
+// (release.mjs removes it when empty, so it only shows when there are entries).
 if (!content.includes("## [Unreleased]")) {
-  content = content.replace(/^(# Changelog\s*\n)/, "$1\n## [Unreleased]\n");
+  const ls = content.split("\n");
+  const firstSection = ls.findIndex((l) => l.startsWith("## "));
+  if (firstSection === -1) {
+    content = content.replace(/\s*$/, "\n") + "\n## [Unreleased]\n";
+  } else {
+    ls.splice(firstSection, 0, "## [Unreleased]", "");
+    content = ls.join("\n");
+  }
 }
 
 const lines = content.split("\n");

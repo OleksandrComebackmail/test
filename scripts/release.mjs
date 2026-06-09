@@ -54,7 +54,9 @@ if (pkg.version === "0.0.0") {
 pkg.version = version;
 writeFileSync(PKG, JSON.stringify(pkg, null, 2) + "\n");
 
-const newBlock = ["## [Unreleased]", "", `## [${version}] - ${DATE}`, ...blockLines];
+// Drop the (now-emptied) Unreleased heading; update-changelog re-creates it
+// on the next PR, so it only appears while there are unreleased entries.
+const newBlock = [`## [${version}] - ${DATE}`, ...blockLines];
 const newLines = [...lines.slice(0, start), ...newBlock, ...lines.slice(end)];
 writeFileSync(FILE, newLines.join("\n").replace(/\n{3,}/g, "\n\n"));
 
