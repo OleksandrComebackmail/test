@@ -4,6 +4,7 @@
 
 ### Added
 - add percent helper (#9)
+- add ratio helper (#9)
 
 # 1.2.0 — 2026-06-08
 
