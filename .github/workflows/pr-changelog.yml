@@ -27,11 +27,13 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Update CHANGELOG (Unreleased)
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}
+      - name: Regenerate CHANGELOG (Unreleased) from PR commits
         env:
-          TITLE: ${{ github.event.pull_request.title }}
           NUM: ${{ github.event.pull_request.number }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE: ${{ github.base_ref }}
         run: node scripts/update-changelog.mjs
       - name: Commit to PR branch
         run: |

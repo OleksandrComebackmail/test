@@ -1,20 +1,15 @@
-// Appends/updates this PR's entry under "## [Unreleased]" in CHANGELOG.md.
-// Idempotent: keyed by (#PR_NUMBER), so re-runs (synchronize/edited) replace
-// the existing bullet instead of duplicating it.
+// Regenerates THIS PR's entries under "## [Unreleased]" in CHANGELOG.md from the
+// conventional commits on the PR branch (vs the base branch). Runs on every push
+// to the PR, so adding/removing commits re-renders the PR's block. Idempotent:
+// all bullets keyed by (#PR_NUMBER) are removed and rebuilt from the current
+// branch state, so re-runs without new commits produce no diff.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 const FILE = "CHANGELOG.md";
-const title = (process.env.TITLE || "").trim();
 const num = process.env.NUM;
 const author = process.env.AUTHOR;
-
-// Parse a Conventional Commit title: type(scope)!: description
-const m = title.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
-if (!m) {
-  console.log(`Title "${title}" is not conventional — skipping changelog.`);
-  process.exit(0);
-}
-const [, type, , bang, desc] = m;
+const base = process.env.BASE || "main";
 
 const SECTION = {
   feat: "Added",
@@ -23,15 +18,29 @@ const SECTION = {
   refactor: "Changed",
   revert: "Reverted",
 };
-const section = SECTION[type];
-if (!section) {
-  console.log(`Type "${type}" is hidden — no changelog entry.`);
-  process.exit(0);
-}
-
+const ORDER = ["Added", "Fixed", "Performance", "Changed", "Reverted"];
 const tag = `(#${num})`;
-const breaking = bang ? " **(BREAKING)**" : "";
-const bullet = `- ${desc} ${tag} (@${author})${breaking}`;
+
+// Commits on this branch since it diverged from the base.
+const baseSha = execSync(`git merge-base origin/${base} HEAD`).toString().trim();
+const raw = execSync(`git log ${baseSha}..HEAD --pretty=format:%H%x1f%an%x1f%s`)
+  .toString()
+  .trim();
+const commits = raw ? raw.split("\n").map((l) => l.split("\x1f")) : [];
+
+// Build this PR's bullets per section, in commit order (oldest first).
+const collected = {}; // section -> [bullet]
+for (const [, an, subject] of commits.reverse()) {
+  if (an === "github-actions[bot]") continue;
+  if (/^docs: update changelog/.test(subject) || subject.includes("[skip ci]")) continue;
+  const m = subject.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
+  if (!m) continue;
+  const [, type, , bang, desc] = m;
+  const section = SECTION[type];
+  if (!section) continue;
+  const breaking = bang ? " **(BREAKING)**" : "";
+  (collected[section] ??= []).push(`- ${desc} ${tag} (@${author})${breaking}`);
+}
 
 let content = existsSync(FILE)
   ? readFileSync(FILE, "utf8")
@@ -48,7 +57,7 @@ if (end === -1) end = lines.length;
 const head = lines.slice(0, start + 1);
 const tail = lines.slice(end);
 
-// Parse existing Unreleased bullets per section; drop any bullet for this PR.
+// Existing Unreleased bullets per section, minus this PR's old set.
 const sections = {};
 let current = null;
 for (const l of lines.slice(start + 1, end)) {
@@ -60,19 +69,18 @@ for (const l of lines.slice(start + 1, end)) {
     sections[current].push(l.trim());
   }
 }
-sections[section] ??= [];
-sections[section].push(bullet);
-
-const ORDER = ["Added", "Fixed", "Performance", "Changed", "Reverted"];
-const block = [""];
-for (const name of ORDER) {
-  if (sections[name]?.length) {
-    block.push(`### ${name}`, ...sections[name], "");
-  }
+// Merge freshly collected bullets for this PR.
+for (const [section, bullets] of Object.entries(collected)) {
+  (sections[section] ??= []).push(...bullets);
 }
 
-const out = [...head, ...block, ...tail]
-  .join("\n")
-  .replace(/\n{3,}/g, "\n\n");
+const block = [""];
+for (const name of ORDER) {
+  if (sections[name]?.length) block.push(`### ${name}`, ...sections[name], "");
+}
+
+const out = [...head, ...block, ...tail].join("\n").replace(/\n{3,}/g, "\n\n");
 writeFileSync(FILE, out);
-console.log(`Changelog updated: ${bullet}`);
+console.log(
+  `Changelog regenerated for PR #${num}: ${Object.values(collected).flat().length} entr(y/ies).`,
+);
