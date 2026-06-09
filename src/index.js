@@ -12,3 +12,6 @@ export const round = (n, decimals = 0) =>
 export const average = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 export const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+
+export const percent = (part, whole) => (whole === 0 ? 0 : (part / whole) * 100);
+export const ratio = (a, b) => (b === 0 ? 0 : a / b);
