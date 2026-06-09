@@ -1,11 +1,14 @@
-// Run on push to main. If "## [Unreleased]" has content, cut it into a new
-// versioned section, bump package.json, and emit outputs for the workflow to
-// commit + tag + release. If Unreleased is empty, do nothing (released=false).
+// Run on push to main. If there are pending entries below the `<!-- unreleased -->`
+// anchor, cut them into a new level-1 version section (`# X.Y.Z — DATE`), bump
+// package.json, and emit outputs for the workflow to commit + tag + release.
+// If there are no pending entries, do nothing (released=false).
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 
 const FILE = "CHANGELOG.md";
 const PKG = "package.json";
+const ANCHOR = "<!-- unreleased -->";
 const DATE = process.env.RELEASE_DATE || "";
+const isVersion = (l) => /^# \d/.test(l);
 
 const out = (k, v) => {
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
@@ -18,22 +21,21 @@ if (!existsSync(FILE)) {
 
 const content = readFileSync(FILE, "utf8");
 const lines = content.split("\n");
-const start = lines.findIndex((l) => l.startsWith("## [Unreleased]"));
+const start = lines.findIndex((l) => l.trim() === ANCHOR);
 if (start === -1) {
   out("released", "false");
   process.exit(0);
 }
-let end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
+let end = lines.findIndex((l, i) => i > start && isVersion(l));
 if (end === -1) end = lines.length;
 
 const blockLines = lines.slice(start + 1, end);
 if (!blockLines.join("\n").trim()) {
-  console.log("Unreleased empty — nothing to release.");
+  console.log("No pending entries — nothing to release.");
   out("released", "false");
   process.exit(0);
 }
 
-// Determine bump from the Unreleased content.
 const block = blockLines.join("\n");
 let bump = "patch";
 if (/^### Added/m.test(block)) bump = "minor";
@@ -54,9 +56,8 @@ if (pkg.version === "0.0.0") {
 pkg.version = version;
 writeFileSync(PKG, JSON.stringify(pkg, null, 2) + "\n");
 
-// Drop the (now-emptied) Unreleased heading; update-changelog re-creates it
-// on the next PR, so it only appears while there are unreleased entries.
-const newBlock = [`## [${version}] - ${DATE}`, ...blockLines];
+// Replace the anchor with the new version heading; the next PR re-creates the anchor.
+const newBlock = [`# ${version} — ${DATE}`, ...blockLines];
 const newLines = [...lines.slice(0, start), ...newBlock, ...lines.slice(end)];
 writeFileSync(FILE, newLines.join("\n").replace(/\n{3,}/g, "\n\n"));
 
