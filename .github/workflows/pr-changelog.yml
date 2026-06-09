@@ -32,8 +32,8 @@ jobs:
       - name: Regenerate CHANGELOG (Unreleased) from PR commits
         env:
           NUM: ${{ github.event.pull_request.number }}
-          AUTHOR: ${{ github.event.pull_request.user.login }}
           BASE: ${{ github.base_ref }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: node scripts/update-changelog.mjs
       - name: Commit to PR branch
         run: |

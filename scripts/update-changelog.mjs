@@ -1,13 +1,12 @@
 // Regenerates THIS PR's unreleased entries in CHANGELOG.md from the conventional
 // commits on the PR branch (vs the base branch). Runs on every push to the PR, so
-// adding/removing commits re-renders the PR's block. Idempotent: all bullets keyed
-// by (#PR_NUMBER) are removed and rebuilt from the current branch state.
+// adding/removing commits re-renders the PR's block. Idempotent: all bullets that
+// link to this PR are removed and rebuilt from the current branch state.
 //
 // Format notes:
-// - Pending entries live below an invisible `<!-- unreleased -->` anchor (no
-//   visible "Unreleased" heading).
+// - Pending entries live below an invisible `<!-- unreleased -->` anchor.
 // - Version sections are level-1 headings: `# X.Y.Z — DATE` (written by release.mjs).
-// - Bullets carry no author.
+// - Each bullet links the PR (`[#N](.../pull/N)`) and the commit (`[sha](.../commit/sha)`).
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 
@@ -15,6 +14,16 @@ const FILE = "CHANGELOG.md";
 const ANCHOR = "<!-- unreleased -->";
 const num = process.env.NUM;
 const base = process.env.BASE || "main";
+
+// Repo URL for links (from CI env, else derived from the origin remote).
+let repo = process.env.REPO_URL;
+if (!repo) {
+  repo = execSync("git remote get-url origin")
+    .toString()
+    .trim()
+    .replace(/^git@github\.com:/, "https://github.com/")
+    .replace(/\.git$/, "");
+}
 
 const SECTION = {
   feat: "Added",
@@ -24,7 +33,7 @@ const SECTION = {
   revert: "Reverted",
 };
 const ORDER = ["Added", "Fixed", "Performance", "Changed", "Reverted"];
-const tag = `(#${num})`;
+const prKey = `/pull/${num})`; // idempotency marker: matches this PR's bullets
 const isVersion = (l) => /^# \d/.test(l);
 
 // Commits on this branch since it diverged from the base.
@@ -36,7 +45,7 @@ const commits = raw ? raw.split("\n").map((l) => l.split("\x1f")) : [];
 
 // Build this PR's bullets per section, in commit order (oldest first).
 const collected = {};
-for (const [, an, subject] of commits.reverse()) {
+for (const [sha, an, subject] of commits.reverse()) {
   if (an === "github-actions[bot]") continue;
   if (/^docs: update changelog/.test(subject) || subject.includes("[skip ci]")) continue;
   const m = subject.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
@@ -45,7 +54,9 @@ for (const [, an, subject] of commits.reverse()) {
   const section = SECTION[type];
   if (!section) continue;
   const breaking = bang ? " **(BREAKING)**" : "";
-  (collected[section] ??= []).push(`- ${desc} ${tag}${breaking}`);
+  const pr = `[#${num}](${repo}/pull/${num})`;
+  const commit = `[${sha.slice(0, 7)}](${repo}/commit/${sha})`;
+  (collected[section] ??= []).push(`- ${desc} (${pr}) (${commit})${breaking}`);
 }
 
 let content = existsSync(FILE)
@@ -79,7 +90,7 @@ for (const l of lines.slice(start + 1, end)) {
   if (hm) {
     current = hm[1];
     sections[current] ??= [];
-  } else if (l.trim().startsWith("- ") && current && !l.includes(tag)) {
+  } else if (l.trim().startsWith("- ") && current && !l.includes(prKey)) {
     sections[current].push(l.trim());
   }
 }
